@@ -1,0 +1,39 @@
+site_name: Synthetic Healthcare System Data Generator
+
+theme:
+  name: material
+
+  custom_dir: overrides
+
+  palette:
+    scheme: default
+    primary: black
+    accent: cyan
+
+  font:
+    text: Recursive
+    code: Recursive Mono
+
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.sections
+    - navigation.tabs
+    - navigation.expand
+    - toc.integrate
+
+  # Default values, taken from mkdocs_theme.yml
+  language: en
+
+extra_javascript:
+  - https://cdn.plot.ly/plotly-3.0.1.min.js
+  - js/vis.js
+
+# extra_css:
+#     - css/styles.css
+#   - https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css
+
+plugins:
+  - minify:
+      minify_html: true
+  # - search

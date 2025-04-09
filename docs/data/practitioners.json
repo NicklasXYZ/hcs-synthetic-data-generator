@@ -1,0 +1,47 @@
+[
+    {
+        "birthdate": "1986-08-20 00:00:00",
+        "first_name": "Bill",
+        "gender": "male",
+        "id": "dc570131-f8e1-4aa7-8bce-abdeeededb07",
+        "last_name": "Howard",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "2016-08-28 00:00:00",
+        "first_name": "Nancy",
+        "gender": "male",
+        "id": "e256a6dc-8f54-46b7-87b5-b2bc5a8aaeca",
+        "last_name": "Dickson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1912-02-23 00:00:00",
+        "first_name": "Lauren",
+        "gender": "female",
+        "id": "f9e8a369-2999-4735-9d56-cc943c9ad14c",
+        "last_name": "Thompson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1940-03-21 00:00:00",
+        "first_name": "Sarah",
+        "gender": "male",
+        "id": "c84a7b28-550a-4b46-acab-3301bc8f7d29",
+        "last_name": "Pham",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1932-06-02 00:00:00",
+        "first_name": "Monica",
+        "gender": "male",
+        "id": "61ee411a-1bac-47a7-b386-f7a4c991603f",
+        "last_name": "Garrison",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    }
+]
