@@ -15,7 +15,7 @@ The code repository [hcs-synthetic-data-generator](https://github.com/NicklasXYZ
 
 The simulation is designed to produce realistic event sequences that can be classified as either normal or anomalous patterns of healthcare system usage.
 
-The resulting dataset (located [here](https://github.com/NicklasXYZ/hcs-synthetic-data-generator/docs/data)) obtained by running the simulation code within the repository is displayed below.
+The resulting dataset (located [here](https://github.com/NicklasXYZ/hcs-synthetic-data-generator/tree/main/docs/data)) obtained by running the simulation code within the repository is displayed below.
 
 ## Event Sequence Visualization
 
