@@ -18,5 +18,5 @@ python export_data.py
 
 # Visualize the simulated data 
 mkdocs serve
-# --> navigate to localhost:8000
+# --> navigate to localhost:8000/vis
 ```
