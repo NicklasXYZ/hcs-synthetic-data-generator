@@ -209,7 +209,7 @@ def export_to_json(engine):
     with Session(engine) as session:
         # Export Patients
         patients = session.exec(select(models.Patient)).all()
-        with open("./ids-data/docs/data/patients.json", "w") as f:
+        with open("./docs/data/patients.json", "w") as f:
             json.dump(
                 [p.model_dump() for p in patients],
                 f,
@@ -220,7 +220,7 @@ def export_to_json(engine):
 
         # Export Practitioners
         practitioners = session.exec(select(models.Practitioner)).all()
-        with open("./ids-data/docs/data/practitioners.json", "w") as f:
+        with open("./docs/data/practitioners.json", "w") as f:
             json.dump(
                 [p.model_dump() for p in practitioners],
                 f,
@@ -300,7 +300,7 @@ def export_to_json(engine):
                 }
             )
 
-        with open("./ids-data/docs/data/events.json", "w") as f:
+        with open("./docs/data/events.json", "w") as f:
             json.dump(events, f, indent=4, sort_keys=True, default=str)
 
 
