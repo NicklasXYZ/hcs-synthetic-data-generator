@@ -18,7 +18,8 @@ NUMBER_OF_PRACTITIONERS = 5
 INITIAL_NUMBER_OF_PATIENTS = 10 * NUMBER_OF_PRACTITIONERS
 
 # Define the simulation duration in minutes
-SIMULATION_DURATION = 60 * 24 * 7 * 12 * 4  # 12 * 4 weeks (ca. 3 * 4 months) in minutes
+# Currently: 12 * 4 weeks (ca. 3 * 4 months) in minutes
+SIMULATION_DURATION = 60 * 24 * 7 * 12 * 4  
 
 # Define appointment/encounter durations
 VISIT_DURATIONS = [15, 30, 45, 60]
@@ -27,6 +28,10 @@ VISIT_DURATION = lambda: random.choice(VISIT_DURATIONS)
 # Appointment related probabilities
 CANCEL_PROBABILITY = 0.1
 NOSHOW_PROBABILITY = 0.1
+
+# Pobability related to the chance of generating observations
+# during an encounter
+OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY = 0.5
 
 # Probability of Break The Glass events
 BTG_PROBABILITY = 0.025
@@ -43,6 +48,12 @@ last_patient_activity = {}  # Tracks last activity time for each patient
 active_appointments: set[tuple[str, str]] = (
     set()
 )  # Tuples of (patient_id, practitioner.name)
+
+# Patient population related probabilities
+DISCHARGE_PROBABILITY = 0.05  # 5% chance patient leaves after each sequence
+NEW_PATIENT_PROBABILITY = 0.1  # 10% chance to add new patients each cycle
+TARGET_POPULATION = INITIAL_NUMBER_OF_PATIENTS
+MIN_POPULATION = int(TARGET_POPULATION * 0.7)  # Threshold for adding new patients
 
 
 def find_next_available_time(
@@ -89,7 +100,8 @@ def find_next_available_time(
         ]
 
         observation_slots = [
-            (x.timestamp, x.timestamp + 1)  # Assuming observations take 1 minute
+            # Assuming observations take 1 minute
+            (x.timestamp, x.timestamp + 1)
             for x in observations
         ]
 
@@ -364,7 +376,7 @@ def encounter(
     else:
         yield main_process
 
-    if random.random() < 0.5:
+    if random.random() < OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY:
         yield environment.process(
             observations(
                 environment,
@@ -584,12 +596,6 @@ def scheduler(
     practitioner_objects,
     patient_objects,
 ):
-    # Constants
-    DISCHARGE_PROBABILITY = 0.05  # 5% chance patient leaves after each sequence
-    NEW_PATIENT_PROBABILITY = 0.1  # 10% chance to add new patients each cycle
-    TARGET_POPULATION = INITIAL_NUMBER_OF_PATIENTS
-    MIN_POPULATION = int(TARGET_POPULATION * 0.7)  # Threshold for adding new patients
-
     # Initialize tracking
     active_patient_count = len(patient_objects)
     print(f"[{environment.now:>4}] Starting with {active_patient_count} patients")
@@ -770,4 +776,4 @@ if __name__ == "__main__":
         pracitioners=NUMBER_OF_PRACTITIONERS,
         patients=INITIAL_NUMBER_OF_PATIENTS,
     )
-    print("SIM_DURATION: ", SIMULATION_DURATION)
+    print("TOTAL - SIM_DURATION: ", SIMULATION_DURATION)
