@@ -16,14 +16,15 @@ Faker.seed(42)
 random.seed(42)
 
 # === Global Variables ===
-NUMBER_OF_PRACTITIONERS = 5
-INITIAL_NUMBER_OF_PATIENTS = 25 * NUMBER_OF_PRACTITIONERS
-
-SIMULATION_MONTHS = 12
+SIMULATION_DURATION_IN_MONTHS = 12
 # Define the simulation duration in minutes
 # Currently: 12 * 4 weeks (ca. 1 year) in minutes
-# SIMULATION_DURATION = 60 * 24 * 7 * (12 * 4)
-SIMULATION_DURATION = 60 * 24 * 7 * 4 * SIMULATION_MONTHS
+SIMULATION_DURATION = 60 * 24 * 7 * 4 * SIMULATION_DURATION_IN_MONTHS
+
+# Define the number of practitioners and patients
+NUMBER_OF_PRACTITIONERS = 10
+INITIAL_NUMBER_OF_PATIENTS = 20 * NUMBER_OF_PRACTITIONERS
+
 
 # Define appointment/encounter durations
 VISIT_DURATIONS = [15, 30, 45, 60]
@@ -39,15 +40,12 @@ OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY = 0.5
 
 # Probability of normal and Break The Glass (BTG) access events
 BTG_PROBABILITY = 0.025
-STANDALONE_BTG_ACCESS_PROBABILITY = 0.025
-STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.025
-
-# Probability of patient not re-queueing for a next appointment
-DISCHARGE_PROBABILITY = 0.05
+STANDALONE_BTG_ACCESS_PROBABILITY = 0.0125
+STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.0125
 
 # Cooldown duration between appointents bookings
-PATIENT_COOLDOWN = 60 * 24  # 24 * 7 hours in minutes (adjust as needed)
-last_patient_activity = {}  # Tracks last activity time for each patient
+PATIENT_COOLDOWN = 60 * 24  # Wait 1 week before trying to schedule the next appointment
+last_patient_activity: dict = {}  # Tracks last activity time for each patient
 
 # Track currently active/on-going appointments
 active_appointments: set[tuple[str, str]] = (
@@ -55,7 +53,7 @@ active_appointments: set[tuple[str, str]] = (
 )  # Tuples of (patient_id, practitioner.name)
 
 ## Patient population related probabilities
-# 5% chance patient leaves after each sequence
+# 10% chance patient leaves after each sequence
 DISCHARGE_PROBABILITY = 0.05
 # 10% chance to add new patients each cycle
 NEW_PATIENT_PROBABILITY = 0.05
@@ -71,7 +69,7 @@ OBSERVATION_CODES = {
     3: ("8480-6", "Blood Pressure"),
     4: ("2345-7", "Blood Glucose"),
 }
-MAX_OBSERVATIONS = 4
+MAX_OBSERVATIONS = 5
 
 ### Version 1.0
 # def find_next_available_time(
@@ -342,7 +340,7 @@ def is_time_available(
     environment,
     practitioner_object: models.Practitioner,
     start_time: int,
-    duration: int = 1,
+    duration: int,
 ) -> bool:
     """Check if a practitioner has any conflicts during the specified time period"""
     end_time = start_time + duration
@@ -400,6 +398,7 @@ def is_time_available(
             return True
 
     return False
+
 
 # TODO: Make sure that appointments start at somewhat regular points in time!
 def appointment(
@@ -534,7 +533,7 @@ def encounter(
     fhir_logger: models.FHIRLogger,
     practitioner_object: models.Practitioner,
     patient_object: models.Patient,
-    appointment_id: str,
+    appointment_id: str | None,
     appointment_start: int,
     appointment_duration: int,
 ):
@@ -607,7 +606,7 @@ def biased_times(start_time, end_time, count: int, bias_strength: float = 2.0):
     if total_minutes == 0:
         raise ValueError("total_minutes = 0, so no biased times can be generated!")
 
-    points = set()
+    points: set[int] = set()
     while len(points) < count:
         # Generate biased random number between 0 and 1
         r = random.random() ** bias_strength
@@ -625,7 +624,7 @@ def observations(
     patient_object: models.Patient,
     encounter_start: int,
     remaining_appointment_duration: int,
-    encounter_id: str,
+    encounter_id: str | None,
 ):
     """
     Simulates an observation (possibly recorded
@@ -641,7 +640,7 @@ def observations(
             encounter_start,
             encounter_start + remaining_appointment_duration,
             count=count,
-            bias_strength=2.0,
+            bias_strength=1.75,
         )
 
     for i in range(count):
@@ -689,9 +688,12 @@ def resource_access_process(
     context_resource_id: Union[str, None] = None,
 ):
     """Simulates a logged access event"""
-    # Random delay before access event occurs
-    delay = random.randint(0, 10)  # TODO: Necessary???
-    yield environment.timeout(delay)
+    # # Random delay before access event occurs
+    # delay = random.randint(0, 10)
+    # yield environment.timeout(delay)
+
+    # No delay before access event occurs
+    yield environment.timeout(0)
 
     if event_type == models.AccessEventType.EMERGENCY:
         purpose = models.AccessEventPurpose.EMERGENCY
@@ -788,8 +790,13 @@ def standalone_access_event_generator(
 
         if random.random() < STANDALONE_BTG_ACCESS_PROBABILITY:
             # Randomly select practitioner and patient
-            practitioner = random.choice(practitioner_objects)
-            patient = random.choice(patient_objects)
+            # practitioner = random.choice(practitioner_objects)
+            # patient = random.choice(patient_objects)
+
+            practitioner_id = random.choice(list(practitioner_objects.keys()))
+            patient_id = random.choice(list(patient_objects.keys()))
+            practitioner = practitioner_objects[practitioner_id]
+            patient = patient_objects[patient_id]
 
             # Trigger BTG access event
             environment.process(
@@ -803,8 +810,13 @@ def standalone_access_event_generator(
             )
         elif random.random() < STANDALONE_NORMAL_ACCESS_PROBABILITY:
             # Randomly select practitioner and patient
-            practitioner = random.choice(practitioner_objects)
-            patient = random.choice(patient_objects)
+            # practitioner = random.choice(practitioner_objects)
+            # patient = random.choice(patient_objects)
+
+            practitioner_id = random.choice(list(practitioner_objects.keys()))
+            patient_id = random.choice(list(patient_objects.keys()))
+            practitioner = practitioner_objects[practitioner_id]
+            patient = patient_objects[patient_id]
 
             # Trigger a normal access event
             environment.process(
@@ -852,7 +864,7 @@ def patient_process(
 
         # Check if time is available right now
         if is_time_available(
-            environment, practitioner_object, current_time, encounter_duration
+            environment, practitioner_object, current_time, duration=encounter_duration
         ):
             yield environment.process(
                 encounter(
@@ -871,7 +883,9 @@ def patient_process(
         current_time = environment.now
 
         # Observations are quick (1 minute), just check exact time
-        if is_time_available(environment, practitioner_object, current_time):
+        if is_time_available(
+            environment, practitioner_object, current_time, duration=1
+        ):
             yield environment.process(
                 observations(
                     environment=environment,
@@ -889,32 +903,239 @@ def patient_process(
             )
 
 
-def fill_patient_queue(environment, patient_queue, patient_objects: list, interval=15):
-    for patient_object in patient_objects:
+# def fill_patient_queue(environment, patient_queue, patient_objects: list, interval=15):
+#     for patient_object in patient_objects:
+#         arrival_time = int(random.expovariate(1.0 / interval))
+#         yield environment.timeout(arrival_time)
+#         patient_queue.put(patient_object)
+
+
+# def fill_patient_queues(
+#     environment, patient_queues, patient_objects: list, interval=15
+# ):
+#     number_of_practitioners = len(patient_queues.keys())
+#     count = 0
+#     while True:
+#         patient_object = patient_objects[count]
+#         index = count % number_of_practitioners
+#         arrival_time = int(random.expovariate(1.0 / interval))
+#         yield environment.timeout(arrival_time)
+#         patient_queue.put(patient_object)
+
+
+def fill_patient_queues(
+    environment, patient_queues, patient_objects: list, interval=15
+):
+    number_of_practitioners = len(patient_queues)
+    count = 0
+    while count < len(patient_objects):  # Stop after all patients have been assigned
+        patient_object = patient_objects[count]
+        index = count % number_of_practitioners  # Round-robin index
+        key = list(patient_queues.keys())[index]
         arrival_time = int(random.expovariate(1.0 / interval))
         yield environment.timeout(arrival_time)
-        patient_queue.put(patient_object)
+        queue = patient_queues[key]
+        yield queue.put(patient_object)
+        print(
+            f"Time {environment.now}: Patient {patient_object} assigned to queue {key}"
+        )
+        count += 1
 
 
 # === Scheduler ===
+# def scheduler(
+#     engine,
+#     environment,
+#     fhir_logger,
+#     patient_queue,
+#     practitioner_objects,
+#     patient_objects,
+# ):
+#     # Initialize tracking
+#     active_patient_count = len(patient_objects)
+#     print(f"[{environment.now:>4}] Starting with {active_patient_count} patients")
+
+#     # Initialize last activity times
+#     # global last_patient_activity
+#     # last_patient_activity = {p.id: environment.now for p in patient_objects}
+
+#     # Initial queue filling
+#     environment.process(fill_patient_queue(environment, patient_queue, patient_objects))
+
+#     while True:
+#         # Population maintenance
+#         if active_patient_count < MIN_POPULATION or (
+#             random.random() < NEW_PATIENT_PROBABILITY
+#             and active_patient_count < TARGET_POPULATION
+#         ):
+
+#             new_patients_needed = TARGET_POPULATION - active_patient_count
+#             new_patients = [create_patient(engine) for _ in range(new_patients_needed)]
+
+#             # Initialize activity times for new patients
+#             # for p in new_patients:
+#             #     last_patient_activity[p.id] = environment.now
+
+#             environment.process(
+#                 fill_patient_queue(environment, patient_queue, new_patients)
+#             )
+#             active_patient_count += new_patients_needed
+#             print(
+#                 f"[{environment.now:>4}] Added {new_patients_needed} new patients (Total: {active_patient_count})"
+#             )
+
+#         # Get next patient
+#         patient_object = yield patient_queue.get()
+#         current_time = environment.now
+
+#         # Check cooldown period if patient was recently active
+#         if patient_object.id in last_patient_activity:
+#             time_since_last = current_time - last_patient_activity[patient_object.id]
+#             if time_since_last < PATIENT_COOLDOWN:
+#                 # Skip this patient for now, put back in queue with remaining cooldown
+#                 remaining_cooldown = PATIENT_COOLDOWN - time_since_last
+#                 yield environment.timeout(remaining_cooldown)
+#                 patient_queue.put(patient_object)
+#                 continue
+
+#         # Process patient with available practitioner
+#         practitioner_object = random.choice(practitioner_objects)
+#         main_process = environment.process(
+#             patient_process(
+#                 environment, fhir_logger, practitioner_object, patient_object
+#             )
+#         )
+#         yield main_process
+
+#         # Update last activity time
+#         last_patient_activity[patient_object.id] = environment.now
+
+#         # Determine patient disposition
+#         if random.random() < DISCHARGE_PROBABILITY:
+#             # Patient discharged - remove from tracking
+#             if patient_object.id in last_patient_activity:
+#                 del last_patient_activity[patient_object.id]
+#             active_patient_count -= 1
+#             print(
+#                 f"[{environment.now:>4}] Patient {patient_object.id} discharged (Remaining: {active_patient_count})"
+#             )
+#         else:
+#             # yield environment.timeout(PATIENT_COOLDOWN)
+#             # Patient continues - requeue immediately (cooldown enforced on next pull)
+#             patient_queue.put(patient_object)
+#             # print(
+#             #     f"[{environment.now:>4}] Patient {patient_object.id[:8]} re-queued after full cooldown"
+#             # )
+#             print(
+#                 f"[{environment.now:>4}] Patient {patient_object.id} re-queued (eligible after cooldown)"
+#             )
+
+# def scheduler(
+#     engine,
+#     environment,
+#     fhir_logger,
+#     patient_queues,
+#     practitioner_objects,
+#     patient_objects,
+# ):
+#     # Initialize tracking
+#     active_patient_count = len(patient_objects)
+#     print(f"[{environment.now:>4}] Starting with {active_patient_count} patients")
+
+#     # Initialize last activity times
+#     # global last_patient_activity
+#     # last_patient_activity = {p.id: environment.now for p in patient_objects}
+
+#     # Initial queue filling
+#     environment.process(fill_patient_queues(environment, patient_queues, patient_objects))
+
+#     while True:
+#         # Population maintenance
+#         if active_patient_count < MIN_POPULATION or (
+#             random.random() < NEW_PATIENT_PROBABILITY
+#             and active_patient_count < TARGET_POPULATION
+#         ):
+
+#             new_patients_needed = TARGET_POPULATION - active_patient_count
+#             new_patients = [create_patient(engine) for _ in range(new_patients_needed)]
+
+#             # Initialize activity times for new patients
+#             # for p in new_patients:
+#             #     last_patient_activity[p.id] = environment.now
+
+#             environment.process(
+#                 fill_patient_queues(environment, patient_queues, new_patients)
+#             )
+#             active_patient_count += new_patients_needed
+#             print(
+#                 f"[{environment.now:>4}] Added {new_patients_needed} new patients (Total: {active_patient_count})"
+#             )
+
+#         # Get next patient
+#         patient_object = yield patient_queue.get()
+#         current_time = environment.now
+
+#         # Check cooldown period if patient was recently active
+#         if patient_object.id in last_patient_activity:
+#             time_since_last = current_time - last_patient_activity[patient_object.id]
+#             if time_since_last < PATIENT_COOLDOWN:
+#                 # Skip this patient for now, put back in queue with remaining cooldown
+#                 remaining_cooldown = PATIENT_COOLDOWN - time_since_last
+#                 yield environment.timeout(remaining_cooldown)
+#                 patient_queue.put(patient_object)
+#                 continue
+
+#         # Process patient with available practitioner
+#         practitioner_object = random.choice(practitioner_objects)
+#         main_process = environment.process(
+#             patient_process(
+#                 environment, fhir_logger, practitioner_object, patient_object
+#             )
+#         )
+#         yield main_process
+
+#         # Update last activity time
+#         last_patient_activity[patient_object.id] = environment.now
+
+#         # Determine patient disposition
+#         if random.random() < DISCHARGE_PROBABILITY:
+#             # Patient discharged - remove from tracking
+#             if patient_object.id in last_patient_activity:
+#                 del last_patient_activity[patient_object.id]
+#             active_patient_count -= 1
+#             print(
+#                 f"[{environment.now:>4}] Patient {patient_object.id} discharged (Remaining: {active_patient_count})"
+#             )
+#         else:
+#             # yield environment.timeout(PATIENT_COOLDOWN)
+#             # Patient continues - requeue immediately (cooldown enforced on next pull)
+#             patient_queue.put(patient_object)
+#             # print(
+#             #     f"[{environment.now:>4}] Patient {patient_object.id[:8]} re-queued after full cooldown"
+#             # )
+#             print(
+#                 f"[{environment.now:>4}] Patient {patient_object.id} re-queued (eligible after cooldown)"
+#             )
+
+
 def scheduler(
     engine,
     environment,
     fhir_logger,
-    patient_queue,
+    patient_queues,  # List of queues, one per practitioner
     practitioner_objects,
     patient_objects,
 ):
-    # Initialize tracking
     active_patient_count = len(patient_objects)
     print(f"[{environment.now:>4}] Starting with {active_patient_count} patients")
 
     # Initialize last activity times
-    # global last_patient_activity
     # last_patient_activity = {p.id: environment.now for p in patient_objects}
 
     # Initial queue filling
-    environment.process(fill_patient_queue(environment, patient_queue, patient_objects))
+    environment.process(
+        fill_patient_queues(environment, patient_queues, list(patient_objects.values()))
+    )
 
     while True:
         # Population maintenance
@@ -922,38 +1143,62 @@ def scheduler(
             random.random() < NEW_PATIENT_PROBABILITY
             and active_patient_count < TARGET_POPULATION
         ):
+            new_patients_needed = TARGET_POPULATION - active_patient_count
+            _new_patients = [create_patient(engine) for _ in range(new_patients_needed)]
+            new_patients = {patient.id: patient for patient in _new_patients}
 
-            new_patients_needed = min(3, TARGET_POPULATION - active_patient_count)
-            new_patients = [create_patient(engine) for _ in range(new_patients_needed)]
-
-            # Initialize activity times for new patients
             # for p in new_patients:
             #     last_patient_activity[p.id] = environment.now
 
             environment.process(
-                fill_patient_queue(environment, patient_queue, new_patients)
+                fill_patient_queues(
+                    environment, patient_queues, list(new_patients.values())
+                )
             )
             active_patient_count += new_patients_needed
             print(
                 f"[{environment.now:>4}] Added {new_patients_needed} new patients (Total: {active_patient_count})"
             )
 
-        # Get next patient
-        patient_object = yield patient_queue.get()
+        # # Create get events for each practitioner queue
+        # get_events = {
+        #     practitioner_id: queue.get()
+        #     for practitioner_id, queue in patient_queues.items()
+        # }
+
+        # # Wait until any queue has a patient
+        # results = yield simpy.events.AnyOf(environment, get_events.values())
+
+        # # Find which queue gave us the patient
+        # for practitioner_id, event in get_events.items():
+        #     if event in results:
+        #         # Select patient and practitioner
+        #         patient_object = results[event]
+        #         selected_practitioner_id = practitioner_id
+        #         practitioner_object = practitioner_objects.get(practitioner_id, None)
+        #         break
+
+        practitioner_id = random.choice(list(practitioner_objects.keys()))
+        # patient_id = random.choice(list(patient_objects.keys()))
+        practitioner_object = practitioner_objects[practitioner_id]
+        # patient_object = patient_objects[patient_id]
+
+        patient_object = yield patient_queues[practitioner_id].get()
+
         current_time = environment.now
 
-        # Check cooldown period if patient was recently active
+        # Cooldown check
         if patient_object.id in last_patient_activity:
             time_since_last = current_time - last_patient_activity[patient_object.id]
             if time_since_last < PATIENT_COOLDOWN:
-                # Skip this patient for now, put back in queue with remaining cooldown
                 remaining_cooldown = PATIENT_COOLDOWN - time_since_last
                 yield environment.timeout(remaining_cooldown)
-                patient_queue.put(patient_object)
+                yield patient_queues[practitioner_id].put(
+                    patient_object
+                )  # Put back in correct queue
                 continue
 
-        # Process patient with available practitioner
-        practitioner_object = random.choice(practitioner_objects)
+        # Process patient
         main_process = environment.process(
             patient_process(
                 environment, fhir_logger, practitioner_object, patient_object
@@ -961,8 +1206,15 @@ def scheduler(
         )
         yield main_process
 
-        # Update last activity time
+        # Update activity
         last_patient_activity[patient_object.id] = environment.now
+
+        # Discharge logic
+        # if random.random() < DISCHARGE_PROBABILITY:
+        #     active_patient_count -= 1
+        #     print(
+        #         f"[{environment.now:>4}] Discharged patient {patient_object.id} (Active: {active_patient_count})"
+        #     )
 
         # Determine patient disposition
         if random.random() < DISCHARGE_PROBABILITY:
@@ -976,7 +1228,7 @@ def scheduler(
         else:
             # yield environment.timeout(PATIENT_COOLDOWN)
             # Patient continues - requeue immediately (cooldown enforced on next pull)
-            patient_queue.put(patient_object)
+            patient_queues[practitioner_id].put(patient_object)
             # print(
             #     f"[{environment.now:>4}] Patient {patient_object.id[:8]} re-queued after full cooldown"
             # )
@@ -1026,17 +1278,66 @@ def create_practitioner(engine, environment, role="doctor"):
 
 
 # === Main ===
+# def run_simulation(engine, pracitioners: int, patients: int):
+
+#     # === Simulation Setup ===
+#     environment = simpy.Environment()
+#     patient_queue = simpy.Store(environment)
+
+#     # Create patients
+#     patient_objects = [create_patient(engine) for _ in range(patients)]
+#     practitioner_objects = [
+#         create_practitioner(engine, environment) for _ in range(pracitioners)
+#     ]
+
+#     provenance_tracker = models.ProvenanceTracker(engine=engine)
+
+#     # Mechanism for logging events
+#     fhir_logger = models.FHIRLogger(
+#         engine=engine, provenance_tracker=provenance_tracker
+#     )
+
+#     # Launch scheduler
+#     environment.process(
+#         scheduler(
+#             engine=engine,
+#             environment=environment,
+#             fhir_logger=fhir_logger,
+#             patient_queue=patient_queue,
+#             practitioner_objects=practitioner_objects,
+#             patient_objects=patient_objects,
+#         )
+#     )
+
+#     environment.process(
+#         standalone_access_event_generator(
+#             environment, fhir_logger, practitioner_objects, patient_objects
+#         )
+#     )
+
+#     # Run simulation
+#     environment.run(until=SIMULATION_DURATION)
+
+
 def run_simulation(engine, pracitioners: int, patients: int):
 
     # === Simulation Setup ===
     environment = simpy.Environment()
-    patient_queue = simpy.Store(environment)
 
     # Create patients
-    patient_objects = [create_patient(engine) for _ in range(patients)]
-    practitioner_objects = [
+    _patient_objects = [create_patient(engine) for _ in range(patients)]
+    patient_objects = {patient.id: patient for patient in _patient_objects}
+
+    _practitioner_objects = [
         create_practitioner(engine, environment) for _ in range(pracitioners)
     ]
+    practitioner_objects = {
+        practitioner.id: practitioner for practitioner in _practitioner_objects
+    }
+    patient_queues = {
+        practitioner_object.id: simpy.Store(environment)
+        for practitioner_object in _practitioner_objects
+    }
 
     provenance_tracker = models.ProvenanceTracker(engine=engine)
 
@@ -1051,7 +1352,7 @@ def run_simulation(engine, pracitioners: int, patients: int):
             engine=engine,
             environment=environment,
             fhir_logger=fhir_logger,
-            patient_queue=patient_queue,
+            patient_queues=patient_queues,
             practitioner_objects=practitioner_objects,
             patient_objects=patient_objects,
         )
