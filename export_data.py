@@ -237,7 +237,7 @@ def export_to_json(engine):
         for a in appointments:
             events.append(
                 {
-                    "type": "appointment",
+                    "type": "Appointment",
                     "id": a.id,
                     "patient_id": a.patient_id,
                     "practitioner_id": a.practitioner_id,
@@ -257,7 +257,7 @@ def export_to_json(engine):
         for e in encounters:
             events.append(
                 {
-                    "type": "encounter",
+                    "type": "Encounter",
                     "id": e.id,
                     "patient_id": e.patient_id,
                     "practitioner_id": e.practitioner_id,
@@ -274,7 +274,7 @@ def export_to_json(engine):
         for o in observations:
             events.append(
                 {
-                    "type": "observation",
+                    "type": "Observation",
                     "id": o.id,
                     "patient_id": o.patient_id,
                     "practitioner_id": o.practitioner_id,
@@ -286,12 +286,12 @@ def export_to_json(engine):
                 }
             )
 
-        # Add BTG events
-        btg_events = session.exec(select(models.BTGEvent)).all()
-        for b in btg_events:
+        # Add audit events
+        audit_events = session.exec(select(models.AuditEvent)).all()
+        for b in audit_events:
             events.append(
                 {
-                    "type": "btg",
+                    "type": "AuditEvent",
                     "id": b.id,
                     "patient_id": b.patient_id,
                     "practitioner_id": b.practitioner_id,

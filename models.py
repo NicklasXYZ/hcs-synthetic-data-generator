@@ -54,11 +54,6 @@ class Practitioner(SQLModel, table=True):
             i: [(9 * 60, 17 * 60)] for i in range(5)
         }
 
-    # @property
-    # def name(self):
-    #     """Get full name for simulation compatibility"""
-    #     return f"{self.first_name} {self.last_name}"
-
     # Simulation methods
     def is_within_working_hours(self, duration):
         now = self._env.now
@@ -73,7 +68,12 @@ class Practitioner(SQLModel, table=True):
     def can_take_appointment(self, duration):
         return self.is_within_working_hours(duration)
 
-    # Provide access to simulation resources (optional)
+    @property
+    def name(self):
+        """Get full name of the practitioner"""
+        return f"{self.first_name} {self.last_name} ({self.id})"
+
+    # Also provide access to simulation resources
     @property
     def env(self):
         return self._env
@@ -157,34 +157,45 @@ class Observation(FHIRBase, table=True):
     timestamp: int
 
 
-class BTGEvent(FHIRBase, table=True):
+class AccessEventType(str, Enum):
+    EMERGENCY = "emergency-access"
+    CARE = "care-access"
+
+
+class AccessEventPurpose(str, Enum):
+    # Concepts from: https://terminology.hl7.org/5.1.0/ValueSet-v3-PurposeOfUse.html
+    EMERGENCY = "BTG"
+    CARE = "CAREMGT"
+
+
+class AuditEvent(FHIRBase, table=True):
     resource_type: str = Field(default="AuditEvent", const=True)
 
     # Minimal required FHIR AuditEvent fields
     recorded: int  # When the event was recorded (simulation time)
-    # action: R=Read, C=Create, U=Update, D=Delete, E=Execute
-    action: str = Field(default="R")
+    action: str = Field(default="R")  # R=Read, C=Create, U=Update, D=Delete, E=Execute
 
-    # Simplified BTG-specific fields
-    # target_resource_type: e.g., "Appointment", "Encounter", "Observation"
+    # Optional target resource details (can be None for general system access)
+    # Otherwise, e.g., "Appointment", "Encounter", "Observation"
     target_resource_type: Optional[str] = None
-    # target_resource_id: ID of the target resource
     target_resource_id: Optional[str] = None
 
     # FHIR-aligned categorization
-    event_type: str = Field(default="break-the-glass")  # Custom type identifier
-    purpose: str = Field(default="emergency-access")  # Why access was needed
+
+    # The 'event_type' is e.g., 'care-access' or "emergency-access"
+    event_type: str = Field(default=AccessEventType.CARE)
+    # The purpose of athorization is e.g., (with respect to 'event_type')
+    # "CAREMGT" or "CAREMGT"
+    purpose: str = Field(default=AccessEventPurpose.CARE)
 
     # Outcome information
     outcome: str = Field(default="success")  # success | failure
 
     # Relationships
-    practitioner_id: str = Field(
-        foreign_key="practitioner.id"
-    )  # Who performed the action
-    patient_id: str = Field(
-        foreign_key="patient.id"
-    )  # Which patient's data was accessed
+    # practitioner_id: Who performed the action
+    practitioner_id: str = Field(foreign_key="practitioner.id")
+    # Which patient's data was accessed (optional)
+    patient_id: str = Field(foreign_key="patient.id")
 
     # Optional free-text explanation
     purpose_of_event: Optional[str] = None
@@ -377,19 +388,20 @@ class FHIRLogger:
             session.add(obs)
             session.commit()
 
-    def log_break_the_glass(
+    def log_access_event(
         self,
         patient_id: str,
         recorded: int,
         practitioner_id: str,
-        action: str = "access",
-        purpose: str = "emergency-access",
+        action: str,
+        event_type: AccessEventType,
+        purpose: AccessEventPurpose,
         purpose_of_event: Optional[str] = None,
         target_resource_type: Optional[str] = None,
         target_resource_id: Optional[str] = None,
         outcome: str = "success",
     ):
-        """Log a Break The Glass event with full context"""
+        """Log an access event (possibly with context)"""
         with Session(self.engine) as session:
             # Get practitioner and patient objects
             practitioner = session.get(Practitioner, practitioner_id)
@@ -398,10 +410,9 @@ class FHIRLogger:
             if not practitioner or not patient:
                 raise ValueError("Practitioner or Patient not found")
 
-            # Create the BTG event
-            btg = BTGEvent(
-                resource_type="AuditEvent",
-                event_type="break-the-glass",
+            # Create the  event
+            audit_event = AuditEvent(
+                event_type=event_type,
                 recorded=recorded,
                 target_resource_type=target_resource_type,
                 target_resource_id=target_resource_id,
@@ -413,19 +424,19 @@ class FHIRLogger:
                 patient_id=patient_id,
             )
 
-            session.add(btg)
+            session.add(audit_event)
             session.commit()
-            session.refresh(btg)
+            session.refresh(audit_event)
 
             # Log provenance
             self._log_provenance(
                 action="create",
                 recorded=recorded,
-                resource=btg,
+                resource=audit_event,
                 practitioner=practitioner,
                 before=None,
                 after={
-                    "event_type": "break-the-glass",
+                    "event_type": event_type,
                     "purpose": purpose,
                     "target_resource": (
                         f"{target_resource_type}/{target_resource_id}"
@@ -436,4 +447,4 @@ class FHIRLogger:
                 },
             )
 
-            return btg.id
+            return audit_event.id
