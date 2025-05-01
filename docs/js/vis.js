@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
       // Get current filter values
       // const practitionerId = document.getElementById("practitioner-select").value;
-      const selectedTypes = ["appointment", "encounter", "observation", "btg"];
+      const selectedTypes = ["Appointment", "Encounter", "Observation", "AuditEvent"];
   
       // Get current filter values
       const practitionerId = document.getElementById("practitioner-select").value;
@@ -146,10 +146,10 @@ document.addEventListener("DOMContentLoaded", function () {
   
       // Visualization setup
       const colors = {
-        appointment: "#1f77b4",
-        encounter: "#ff7f0e",
-        observation: "#2ca02c",
-        btg: "#d62728",
+        Appointment: "#1f77b4",
+        Encounter: "#ff7f0e",
+        Observation: "#2ca02c",
+        AuditEvent: "#d62728",
         groupBgOdd: "rgba(240, 240, 240, 0.25)",
         groupBgEven: "rgba(240, 240, 240, 0.75)",
         groupBorder: "rgba(150, 150, 150, 0.7)",
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const plotData = [];
       const yCategories = [];
       const shapes = [];
-      const typeOrder = ["appointment", "encounter", "observation", "btg"];
+      const typeOrder = ["Appointment", "Encounter", "Observation", "AuditEvent"];
       const rowsPerGroup = 4; // Fixed number of rows per group
       const rowHeight = 1; // Height unit per row
       const groupHeight = rowsPerGroup * rowHeight;
@@ -224,6 +224,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
         // Add actual events
         pair.events.forEach((event) => {
+          // console.log(event.data)
           const typeIndex = typeOrder.indexOf(event.type);
           if (typeIndex === -1) return;
   
@@ -402,9 +403,13 @@ document.addEventListener("DOMContentLoaded", function () {
           createRow("Patient:", `${patient.first_name} ${patient.last_name}`),
           createRow("Provider:", `Dr. ${practitioner.last_name}`),
           timeInfo,
+          // Related to Observations
           event.code && createRow("Code:", event.code),
           event.value && createRow("Value:", event.value),
           event.status && createRow("Status:", event.status),
+          // Related to AuditEvents
+          event.data.event_type && createRow("Type:", event.data.event_type),
+          event.data.purpose && createRow("Purpose:", event.data.purpose),
         ]
           .filter(Boolean)
           .join("<br>");

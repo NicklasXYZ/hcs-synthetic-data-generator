@@ -100,8 +100,13 @@ sequenceDiagram
     end
 
     loop Concurrent BTG/Normal Access Event Generation
-        MainProcess->>BTGAccessEvent: Generate BTG Access Event (1.25% chance)
-        MainProcess->>NormalAccessEvent: Generate Normal Access Event (2.5% chance)
+        alt BTG Access Event
+            MainProcess->>BTGAccessEvent: Generate BTG Access Event (2.5% chance)
+        end
+
+        alt Normal Access Event
+            MainProcess->>NormalAccessEvent: Generate Normal Access Event (2.5% chance)
+        end
     end
 ```
 
