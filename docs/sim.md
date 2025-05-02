@@ -106,3 +106,4 @@ sequenceDiagram
             MainProcess->>NormalAccessEvent: Generate Normal Access Event (1.25% chance)
         end
     end
+```
