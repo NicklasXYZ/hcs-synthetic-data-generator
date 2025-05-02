@@ -1,91 +1,10 @@
 [
     {
-        "birthdate": "1970-11-19 00:00:00",
-        "first_name": "Kimberly",
-        "gender": "male",
-        "id": "5543fc3c-38b8-424e-96ea-57b3beed10b6",
-        "last_name": "Jones",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1936-09-27 00:00:00",
-        "first_name": "Michael",
-        "gender": "male",
-        "id": "5970a859-c6b6-44ad-a7ea-8d5a31a3ac4d",
-        "last_name": "Mullen",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1929-11-18 00:00:00",
-        "first_name": "Carrie",
-        "gender": "male",
-        "id": "2c6a6e9a-3280-47a1-8187-222b257d5e52",
-        "last_name": "Wolf",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1988-05-05 00:00:00",
-        "first_name": "Karen",
+        "birthdate": "1923-05-15 00:00:00",
+        "first_name": "Nathaniel",
         "gender": "female",
-        "id": "76c5a0dc-7e7e-4419-a0c1-4035c5d95f51",
-        "last_name": "Wolf",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1926-11-04 00:00:00",
-        "first_name": "Valerie",
-        "gender": "female",
-        "id": "a2a2e91f-a49b-4cd9-9082-889be1cde87f",
-        "last_name": "Morris",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1950-02-27 00:00:00",
-        "first_name": "Kevin",
-        "gender": "male",
-        "id": "a1a27485-7134-4c2a-b80b-3657117b355b",
-        "last_name": "Hill",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1918-03-27 00:00:00",
-        "first_name": "Benjamin",
-        "gender": "female",
-        "id": "73b0a091-7634-4169-8f76-e38812fe28bf",
-        "last_name": "Wood",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1976-08-25 00:00:00",
-        "first_name": "Christina",
-        "gender": "female",
-        "id": "171dabf9-daf4-41a7-ba34-d2e8dd3f7d7e",
-        "last_name": "Hunter",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1946-08-18 00:00:00",
-        "first_name": "Blake",
-        "gender": "male",
-        "id": "e5582e16-bd29-4de9-8ab4-923bf4488385",
-        "last_name": "Stout",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "2023-04-16 00:00:00",
-        "first_name": "Bryan",
-        "gender": "female",
-        "id": "f52d4af2-269e-44c9-8059-9b9379c2d2e4",
-        "last_name": "Garcia",
+        "id": "a65e688e-abf3-4d39-bec2-1bbe66245bfa",
+        "last_name": "Lam",
         "resource_type": "Practitioner",
         "role": "doctor"
     }

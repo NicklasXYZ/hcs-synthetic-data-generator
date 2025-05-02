@@ -16,19 +16,25 @@ Faker.seed(42)
 random.seed(42)
 
 # === Global Variables ===
-SIMULATION_DURATION_IN_MONTHS = 12
+SIMULATION_DURATION_IN_MONTHS = 1
 # Define the simulation duration in minutes
 # Currently: 12 * 4 weeks (ca. 1 year) in minutes
-SIMULATION_DURATION = 60 * 24 * 7 * 4 * SIMULATION_DURATION_IN_MONTHS
+SIMULATION_DURATION_IN_MINUTES = 60 * 24 * 7 * 4 * SIMULATION_DURATION_IN_MONTHS
 
 # Define the number of practitioners and patients
-NUMBER_OF_PRACTITIONERS = 10
-INITIAL_NUMBER_OF_PATIENTS = 20 * NUMBER_OF_PRACTITIONERS
+NUMBER_OF_PRACTITIONERS = 1
+NUMBER_OF_PATIENTS = 25 * NUMBER_OF_PRACTITIONERS
 
+# Define the event types and their weights
+EVENT_TYPE_WEIGHTS = {
+    "Appointment": 0.75,
+    "Encounter": 0.20,
+    "Observation": 0.05,
+}
 
 # Define appointment/encounter durations
-VISIT_DURATIONS = [15, 30, 45, 60]
-VISIT_DURATION = lambda: random.choice(VISIT_DURATIONS)
+APPOINTMENT_VISIT_DURATIONS = [15, 30, 45, 60]
+APPOINTMENT_VISIT_DURATION = lambda: random.choice(APPOINTMENT_VISIT_DURATIONS)
 
 # Appointment related probabilities
 APPOINTMENT_CANCEL_PROBABILITY = 0.1
@@ -39,12 +45,14 @@ APPOINTMENT_NOSHOW_PROBABILITY = 0.1
 OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY = 0.5
 
 # Probability of normal and Break The Glass (BTG) access events
-BTG_PROBABILITY = 0.025
+BTG_ACCESS_PROBABILITY = 0.025
 STANDALONE_BTG_ACCESS_PROBABILITY = 0.0125
 STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.0125
 
 # Cooldown duration between appointents bookings
-PATIENT_COOLDOWN = 60 * 24  # Wait 1 week before trying to schedule the next appointment
+PATIENT_SCHEDULING_COOLDOWN = (
+    60 * 24
+)  # Wait 24 hours before trying to schedule the next appointment
 last_patient_activity: dict = {}  # Tracks last activity time for each patient
 
 # Track currently active/on-going appointments
@@ -54,12 +62,12 @@ active_appointments: set[tuple[str, str]] = (
 
 ## Patient population related probabilities
 # 10% chance patient leaves after each sequence
-DISCHARGE_PROBABILITY = 0.05
+PATIENT_DISCHARGE_PROBABILITY = 0.05
 # 10% chance to add new patients each cycle
-NEW_PATIENT_PROBABILITY = 0.05
-TARGET_POPULATION = INITIAL_NUMBER_OF_PATIENTS
+PATIENT_ADMITTANCE_PROBABILITY = 0.05
+PATIENT_TARGET_POPULATION = NUMBER_OF_PATIENTS
 # Calculate threshold for adding new patients
-MIN_POPULATION = int(TARGET_POPULATION * 0.75)
+PATIENT_MIN_POPULATION = int(PATIENT_TARGET_POPULATION * 0.75)
 
 
 OBSERVATION_CODES = {
@@ -69,7 +77,7 @@ OBSERVATION_CODES = {
     3: ("8480-6", "Blood Pressure"),
     4: ("2345-7", "Blood Glucose"),
 }
-MAX_OBSERVATIONS = 5
+OBSERVATIONS_MAX = 5
 
 ### Version 1.0
 # def find_next_available_time(
@@ -407,7 +415,7 @@ def appointment(
     practitioner_object: models.Practitioner,
     patient_object: models.Patient,
 ):
-    appointment_duration = VISIT_DURATION()
+    appointment_duration = APPOINTMENT_VISIT_DURATION()
     key = (patient_object.id, practitioner_object.id)
 
     requested_time = environment.now
@@ -501,7 +509,7 @@ def appointment(
         )
 
         # Add potential BTG event during appointment
-        if random.random() < BTG_PROBABILITY:
+        if random.random() < BTG_ACCESS_PROBABILITY:
             btg_proc = environment.process(
                 resource_access_process(
                     environment=environment,
@@ -544,7 +552,7 @@ def encounter(
 
     # Calculate encounter duration
     encounter_duration = max(
-        min(VISIT_DURATIONS),
+        min(APPOINTMENT_VISIT_DURATIONS),
         random.randint(appointment_duration // 2, appointment_duration),
     )
 
@@ -570,7 +578,7 @@ def encounter(
     )
 
     # Add potential BTG event during encounter
-    if random.random() < BTG_PROBABILITY:
+    if random.random() < BTG_ACCESS_PROBABILITY:
         btg_proc = environment.process(
             resource_access_process(
                 environment=environment,
@@ -627,24 +635,39 @@ def observations(
     encounter_id: str | None,
 ):
     """
-    Simulates an observation (possibly recorded
-    inside the timeframe of the encounter).
+    Simulates observations (possibly recorded
+    inside the timeframe of an encounter).
     """
+    # In case remaining_appointment_duration is zero, then we should generate
+    # one or more observations not tied to an encounter or appointment
     if remaining_appointment_duration == 0:
-        # Singleton Observation event
-        count = 1
-        obs_times = [encounter_start]
-    else:
-        count = random.randint(1, MAX_OBSERVATIONS)
-        obs_times = biased_times(
-            encounter_start,
-            encounter_start + remaining_appointment_duration,
-            count=count,
-            bias_strength=1.75,
-        )
+        # For generation purposes, assume that the observations take place within
+        # a timeframe equal to the minimum duration of an appointment 
+        appointment_duration = min(APPOINTMENT_VISIT_DURATIONS)
+        # Calculate encounter duration
+        encounter_duration = random.randint(appointment_duration // 2, appointment_duration)
+        # Calculate maximum possible start delay
+        max_delay = appointment_duration - encounter_duration
+        start_delay = random.randint(0, max_delay)
+
+        # Calculate actual start and end times
+        # encounter_start = appointment_start + start_delay
+        # encounter_end = encounter_start + encounter_duration
+        remaining_appointment_duration = appointment_duration - start_delay
+        # # Singleton Observation event
+        # count = 1
+        # obs_times = [encounter_start]
+    # else:
+    count = random.randint(1, OBSERVATIONS_MAX)
+    obs_times = biased_times(
+        encounter_start,
+        encounter_start + remaining_appointment_duration,
+        count=count,
+        bias_strength=1.75,
+    )
 
     for i in range(count):
-        code, display = OBSERVATION_CODES[i % MAX_OBSERVATIONS]
+        code, display = OBSERVATION_CODES[i % OBSERVATIONS_MAX]
         value = (
             f"{random.uniform(96, 99):.1f} °F"
             if i == 0
@@ -662,7 +685,7 @@ def observations(
         )
 
         # Add potential BTG event during observation
-        if random.random() < BTG_PROBABILITY:
+        if random.random() < BTG_ACCESS_PROBABILITY:
             yield environment.process(
                 resource_access_process(
                     environment=environment,
@@ -830,6 +853,14 @@ def standalone_access_event_generator(
             )
 
 
+def choose_event_type() -> str:
+    return random.choices(
+        population=list(EVENT_TYPE_WEIGHTS.keys()),
+        weights=list(EVENT_TYPE_WEIGHTS.values()),
+        k=1,
+    )[0]
+
+
 # === Patient Process ===
 def patient_process(
     environment,
@@ -838,16 +869,11 @@ def patient_process(
     patient_object: models.Patient,
 ):
     """Simulates a patient triggering events according to probability rules."""
-    # An event sequence can start with one of the following events
-    event_type = random.choices(
-        population=[
-            "Appointment",
-            "Encounter",
-            "Observation",
-        ],
-        weights=[0.75, 0.20, 0.05],
-        k=1,
-    )[0]
+    # An event sequence can start with one of the following events:
+    # - Appointment
+    # - Encounte 
+    # - Observation
+    event_type = choose_event_type()
 
     if event_type == "Appointment":
         yield environment.process(
@@ -859,7 +885,7 @@ def patient_process(
             )
         )
     elif event_type == "Encounter":
-        encounter_duration = VISIT_DURATION()
+        encounter_duration = APPOINTMENT_VISIT_DURATION()
         current_time = environment.now
 
         # Check if time is available right now
@@ -924,7 +950,7 @@ def patient_process(
 
 
 def fill_patient_queues(
-    environment, patient_queues, patient_objects: list, interval=15
+    environment, patient_queues, patient_objects: list, interval=5
 ):
     number_of_practitioners = len(patient_queues)
     count = 0
@@ -1139,11 +1165,11 @@ def scheduler(
 
     while True:
         # Population maintenance
-        if active_patient_count < MIN_POPULATION or (
-            random.random() < NEW_PATIENT_PROBABILITY
-            and active_patient_count < TARGET_POPULATION
+        if active_patient_count < PATIENT_MIN_POPULATION or (
+            random.random() < PATIENT_ADMITTANCE_PROBABILITY
+            and active_patient_count < PATIENT_TARGET_POPULATION
         ):
-            new_patients_needed = TARGET_POPULATION - active_patient_count
+            new_patients_needed = PATIENT_TARGET_POPULATION - active_patient_count
             _new_patients = [create_patient(engine) for _ in range(new_patients_needed)]
             new_patients = {patient.id: patient for patient in _new_patients}
 
@@ -1190,8 +1216,8 @@ def scheduler(
         # Cooldown check
         if patient_object.id in last_patient_activity:
             time_since_last = current_time - last_patient_activity[patient_object.id]
-            if time_since_last < PATIENT_COOLDOWN:
-                remaining_cooldown = PATIENT_COOLDOWN - time_since_last
+            if time_since_last < PATIENT_SCHEDULING_COOLDOWN:
+                remaining_cooldown = PATIENT_SCHEDULING_COOLDOWN - time_since_last
                 yield environment.timeout(remaining_cooldown)
                 yield patient_queues[practitioner_id].put(
                     patient_object
@@ -1217,7 +1243,7 @@ def scheduler(
         #     )
 
         # Determine patient disposition
-        if random.random() < DISCHARGE_PROBABILITY:
+        if random.random() < PATIENT_ADMITTANCE_PROBABILITY:
             # Patient discharged - remove from tracking
             if patient_object.id in last_patient_activity:
                 del last_patient_activity[patient_object.id]
@@ -1365,7 +1391,7 @@ def run_simulation(engine, pracitioners: int, patients: int):
     )
 
     # Run simulation
-    environment.run(until=SIMULATION_DURATION)
+    environment.run(until=SIMULATION_DURATION_IN_MINUTES)
 
 
 # Run it
@@ -1384,6 +1410,6 @@ if __name__ == "__main__":
     run_simulation(
         engine=engine,
         pracitioners=NUMBER_OF_PRACTITIONERS,
-        patients=INITIAL_NUMBER_OF_PATIENTS,
+        patients=NUMBER_OF_PATIENTS,
     )
-    print("TOTAL - SIM_DURATION: ", SIMULATION_DURATION)
+    print(f"REACHED END OF SIMULATION: {SIMULATION_DURATION_IN_MINUTES} minutes.")
