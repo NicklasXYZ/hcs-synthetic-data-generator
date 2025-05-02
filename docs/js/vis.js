@@ -1,40 +1,35 @@
 document.addEventListener("DOMContentLoaded", function () {
   const path = window.location.pathname;
-    
+
   // Remove trailing slash if needed
   const normalizedPath = path.endsWith("/") ? path.slice(0, -1) : path;
 
   console.log("Current path:", normalizedPath);
 
   if (normalizedPath.endsWith("/vis")) {
-    // Load data
+    // Load sample data
     Promise.all([
-      fetch("../data/patients.json").then((r) => r.json()),
-      fetch("../data/practitioners.json").then((r) => r.json()),
-      fetch("../data/events.json").then((r) => r.json()),
+      fetch("../data/patients_sample.json").then((r) => r.json()),
+      fetch("../data/practitioners_sample.json").then((r) => r.json()),
+      fetch("../data/events_sample.json").then((r) => r.json()),
     ])
       .then(([patients, practitioners, events]) => {
         // Create lookup maps
         const patientMap = new Map(patients.map((p) => [p.id, p]));
         const practitionerMap = new Map(practitioners.map((p) => [p.id, p]));
-  
+
         // Store data with valid references only
         window.vizData = {
           patientMap,
           practitionerMap,
-          events: events.filter(
-            (e) =>
-              patientMap.has(e.patient_id) &&
-              practitionerMap.has(e.practitioner_id)
-          ),
-          patients,
+          events,
           practitioners,
         };
-  
+
         // Create controls - simplified to just practitioner selection
         const controls = document.createElement("div");
         controls.className = "controls";
-  
+
         controls.innerHTML = `
         <div class="control-group">
             <label for="practitioner-select">Filter by Practitioner:</label>
@@ -58,21 +53,21 @@ document.addEventListener("DOMContentLoaded", function () {
               <div id="timeline-plot" class="plot-container"></div>
               <div id="event-details" class="details-panel"></div>
           `;
-  
+
         // Add to page
         document
           .querySelector("#visualization-container")
           .append(controls, vizContainer);
-  
+
         // Initialize visualization (with first practitioner selected by default)
         const firstPractitionerId = practitioners.sort((a, b) =>
           a.last_name.localeCompare(b.last_name)
         )[0].id;
         document.getElementById("practitioner-select").value =
           firstPractitionerId;
-  
+
         updateVisualization();
-  
+
         // Auto-update when practitioner selection changes
         document
           .getElementById("practitioner-select")
@@ -87,21 +82,20 @@ document.addEventListener("DOMContentLoaded", function () {
               </div>
           `;
       });
-  
+
     function updateVisualization() {
       const { patientMap, practitionerMap, events, practitioners } =
         window.vizData;
-  
+
       // Get current filter values
-      // const practitionerId = document.getElementById("practitioner-select").value;
       const selectedTypes = ["Appointment", "Encounter", "Observation", "AuditEvent"];
-  
+
       // Get current filter values
       const practitionerId = document.getElementById("practitioner-select").value;
       const currentPractitioner = practitionerId
         ? practitionerMap.get(practitionerId)
         : null;
-  
+
       // Create title based on selection
       let plotTitle = "Patient Timeline";
       if (currentPractitioner) {
@@ -109,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         plotTitle = "Patient Timeline - All Practitioners";
       }
-  
+
       // Filter events
       const filteredEvents = events.filter((e) => {
         return (
@@ -117,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
           selectedTypes.includes(e.type)
         );
       });
-  
+
       // Group by patient-practitioner pairs
       const pairs = {};
       filteredEvents.forEach((e) => {
@@ -125,15 +119,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!pairs[key]) {
           const patient = patientMap.get(e.patient_id);
           const practitioner = practitionerMap.get(e.practitioner_id);
-          pairs[key] = {
-            patient,
-            practitioner,
-            events: [],
-          };
+          if (patient && practitioner) {
+            pairs[key] = {
+              patient,
+              practitioner,
+              events: [],
+            };
+          }
         }
-        pairs[key].events.push(e);
+        if (pairs[key]) {
+          pairs[key].events.push(e);
+        }
       });
-  
+
       // Sort pairs consistently
       const sortedPairs = Object.values(pairs).sort((a, b) => {
         const patientCompare =
@@ -143,7 +141,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (patientCompare !== 0) return patientCompare;
         return a.practitioner.last_name.localeCompare(b.practitioner.last_name);
       });
-  
+
       // Visualization setup
       const colors = {
         Appointment: "#1f77b4",
@@ -154,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
         groupBgEven: "rgba(240, 240, 240, 0.75)",
         groupBorder: "rgba(150, 150, 150, 0.7)",
       };
-  
+
       const plotData = [];
       const yCategories = [];
       const shapes = [];
@@ -162,13 +160,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const rowsPerGroup = 4; // Fixed number of rows per group
       const rowHeight = 1; // Height unit per row
       const groupHeight = rowsPerGroup * rowHeight;
-  
+
       // Calculate positions and create elements
       sortedPairs.forEach((pair, groupIndex) => {
         const groupStartY = groupIndex * (groupHeight + 0.0) - 0.5; // 0.2 for small gap between groups
-  
+
         yCategories.push(`${pair.patient.first_name} ${pair.patient.last_name}`);
-  
+
         // Add background shape (fixed size for all groups)
         shapes.push({
           type: "rect",
@@ -183,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
           line: { width: 0 },
           layer: "below",
         });
-  
+
         // Add group border (fixed size)
         shapes.push({
           type: "rect",
@@ -201,11 +199,11 @@ document.addEventListener("DOMContentLoaded", function () {
           },
           layer: "below",
         });
-  
+
         // Create all type labels (even if no events exist)
         typeOrder.forEach((type, typeIndex) => {
           const yPos = groupStartY + typeIndex * rowHeight + rowHeight / 2;
-  
+
           // Type label
           plotData.push({
             x: [null],
@@ -221,16 +219,15 @@ document.addEventListener("DOMContentLoaded", function () {
             },
           });
         });
-  
+
         // Add actual events
         pair.events.forEach((event) => {
-          // console.log(event.data)
           const typeIndex = typeOrder.indexOf(event.type);
           if (typeIndex === -1) return;
-  
+
           const yPos = groupStartY + typeIndex * rowHeight + rowHeight / 2;
           const isInstantEvent = !event.start && !event.end && event.timestamp;
-  
+
           if (isInstantEvent) {
             // Instant event - single point
             plotData.push({
@@ -272,7 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
               (event.start
                 ? new Date(new Date(event.start).getTime() + 1000 * 60 * 30)
                 : new Date(new Date(event.timestamp).getTime() + 1000 * 60 * 30));
-  
+
             plotData.push({
               x: [start, end],
               y: [yPos, yPos],
@@ -313,12 +310,12 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         });
       });
-  
+
       // Calculate total height needed (50px per row unit)
       const totalHeight = sortedPairs.length * (groupHeight + 0.2) * 20;
-  
+
       console.log(sortedPairs.length * 4);
-  
+
       // Create plot with fixed group sizes
       const layout = {
         title: {
@@ -370,24 +367,24 @@ document.addEventListener("DOMContentLoaded", function () {
         plot_bgcolor: "rgba(0,0,0,0)",
         paper_bgcolor: "rgba(0,0,0,0)",
       };
-  
+
       const config = {
         responsive: true,
         displayModeBar: false,
         scrollZoom: true,
       };
-  
+
       Plotly.newPlot("timeline-plot", plotData, layout, config);
-  
+
       function createHoverText(event, patient, practitioner) {
         const formatDate = (dateStr) =>
           dateStr ? new Date(dateStr).toLocaleString() : "";
-  
+
         const createRow = (label, value) =>
           `<span style="font-family:monospace;white-space:pre">` +
           `${label.padEnd(10)}${value}` +
           `</span>`;
-  
+
         const timeInfo =
           event.timestamp && !event.start && !event.end
             ? createRow("Time:", formatDate(event.timestamp))
@@ -397,7 +394,7 @@ document.addEventListener("DOMContentLoaded", function () {
               ]
                 .filter(Boolean)
                 .join("<br>");
-  
+
         const parts = [
           `<b>${event.type.toUpperCase()}</b>`,
           createRow("Patient:", `${patient.first_name} ${patient.last_name}`),
@@ -413,7 +410,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ]
           .filter(Boolean)
           .join("<br>");
-  
+
         return parts;
       }
     }
