@@ -3,7 +3,7 @@
 ```bash
 conda create -n ids python=3.11
 conda activate ids
-pip install simpy pandas fhir.resources sqlmodel Faker mkdocs-material  mkdocs-minify-plugin
+pip install simpy numpy pandas fhir.resources sqlmodel Faker mkdocs-material mkdocs-minify-plugin
 ```
 
 
