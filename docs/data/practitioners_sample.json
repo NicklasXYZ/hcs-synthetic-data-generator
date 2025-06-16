@@ -1,91 +1,46 @@
 [
     {
-        "birthdate": "1910-03-31 00:00:00",
-        "first_name": "Kayla",
+        "birthdate": "1964-05-09 00:00:00",
+        "first_name": "Richard",
         "gender": "female",
-        "id": "2319594f-630e-4896-a3e6-17a2c230a890",
-        "last_name": "Fernandez",
+        "id": "38ba8abc-4b53-45e5-97d2-582e046a0df5",
+        "last_name": "Sanchez",
         "resource_type": "Practitioner",
         "role": "doctor"
     },
     {
-        "birthdate": "1919-05-24 00:00:00",
-        "first_name": "Sarah",
+        "birthdate": "1941-04-11 00:00:00",
+        "first_name": "Michael",
         "gender": "male",
-        "id": "d26567fd-5d2a-4d67-a597-b225101a92f7",
-        "last_name": "Crane",
+        "id": "3a3c563e-4bd6-4ee6-b1b1-b099d52721e7",
+        "last_name": "Turner",
         "resource_type": "Practitioner",
         "role": "doctor"
     },
     {
-        "birthdate": "2010-12-18 00:00:00",
-        "first_name": "David",
+        "birthdate": "1940-11-18 00:00:00",
+        "first_name": "Julie",
         "gender": "female",
-        "id": "85a7e996-98c5-4871-8ef6-05e0308c4fb3",
-        "last_name": "Morton",
+        "id": "ff233d5f-6ced-415d-9800-7c0287ea7ff5",
+        "last_name": "Rivera",
         "resource_type": "Practitioner",
         "role": "doctor"
     },
     {
-        "birthdate": "1978-12-16 00:00:00",
-        "first_name": "Arthur",
-        "gender": "female",
-        "id": "d4c5be4f-63e9-47bf-be26-4712d3eaf226",
-        "last_name": "Meyer",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1914-07-13 00:00:00",
-        "first_name": "Tyler",
-        "gender": "female",
-        "id": "d6d4f7ef-284b-43dd-a0e3-fe8d5e9ca5c3",
-        "last_name": "Henry",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1923-10-29 00:00:00",
-        "first_name": "Kristi",
+        "birthdate": "1938-09-29 00:00:00",
+        "first_name": "Timothy",
         "gender": "male",
-        "id": "ff77cf14-a19e-4e81-aae0-97c79830e432",
-        "last_name": "Gutierrez",
+        "id": "782a65e0-48ca-4651-92f5-df7b0323d342",
+        "last_name": "Peterson",
         "resource_type": "Practitioner",
         "role": "doctor"
     },
     {
-        "birthdate": "1911-04-07 00:00:00",
-        "first_name": "Zachary",
+        "birthdate": "2023-03-13 00:00:00",
+        "first_name": "Brittany",
         "gender": "female",
-        "id": "1e788e01-b80f-4ca9-b03c-264a1670aa16",
-        "last_name": "Watson",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1926-11-22 00:00:00",
-        "first_name": "Joshua",
-        "gender": "female",
-        "id": "25e0a60e-5281-4ec0-a5c3-b79ef0146b37",
-        "last_name": "Woodward",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1948-09-17 00:00:00",
-        "first_name": "Daniel",
-        "gender": "male",
-        "id": "2e0447a7-73de-47c2-9001-3c45e0e9f830",
-        "last_name": "Sosa",
-        "resource_type": "Practitioner",
-        "role": "doctor"
-    },
-    {
-        "birthdate": "1932-06-10 00:00:00",
-        "first_name": "Rebekah",
-        "gender": "female",
-        "id": "5c27af1c-a03d-4f69-821c-facb26736d23",
-        "last_name": "Prince",
+        "id": "b97e6703-46c8-4dfe-bbf4-7042bd1531c8",
+        "last_name": "Wolf",
         "resource_type": "Practitioner",
         "role": "doctor"
     }

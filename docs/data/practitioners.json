@@ -1,0 +1,92 @@
+[
+    {
+        "birthdate": "1964-05-09 00:00:00",
+        "first_name": "Richard",
+        "gender": "female",
+        "id": "38ba8abc-4b53-45e5-97d2-582e046a0df5",
+        "last_name": "Sanchez",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1940-11-18 00:00:00",
+        "first_name": "Julie",
+        "gender": "female",
+        "id": "ff233d5f-6ced-415d-9800-7c0287ea7ff5",
+        "last_name": "Rivera",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1931-09-04 00:00:00",
+        "first_name": "James",
+        "gender": "male",
+        "id": "b8a6171f-1ee3-4dc4-bb04-8a8b405bfdc9",
+        "last_name": "Wilson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "2023-03-13 00:00:00",
+        "first_name": "Brittany",
+        "gender": "female",
+        "id": "b97e6703-46c8-4dfe-bbf4-7042bd1531c8",
+        "last_name": "Wolf",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1941-04-11 00:00:00",
+        "first_name": "Michael",
+        "gender": "male",
+        "id": "3a3c563e-4bd6-4ee6-b1b1-b099d52721e7",
+        "last_name": "Turner",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1921-05-10 00:00:00",
+        "first_name": "Heidi",
+        "gender": "female",
+        "id": "4ac9778d-8da8-4ee4-8df5-6ac6f96b648a",
+        "last_name": "Martinez",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1938-09-29 00:00:00",
+        "first_name": "Timothy",
+        "gender": "male",
+        "id": "782a65e0-48ca-4651-92f5-df7b0323d342",
+        "last_name": "Peterson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1927-01-21 00:00:00",
+        "first_name": "Cameron",
+        "gender": "male",
+        "id": "d2762bdc-1d34-408e-ba4c-75d4dc99e04c",
+        "last_name": "Vasquez",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1979-10-16 00:00:00",
+        "first_name": "Christopher",
+        "gender": "female",
+        "id": "4dc82a1e-f2f9-45fa-9016-4161cfa701cd",
+        "last_name": "Wright",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1943-12-13 00:00:00",
+        "first_name": "Alexandra",
+        "gender": "female",
+        "id": "c693da11-39c6-41ca-9e50-aa42ca6dfda1",
+        "last_name": "Hayes",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    }
+]

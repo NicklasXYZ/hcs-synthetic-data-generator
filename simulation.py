@@ -7,8 +7,6 @@ import utilities
 import models
 import os
 
-# import numpy as np
-
 # Use Faker for the generation of user data
 fake = Faker()
 
@@ -18,27 +16,28 @@ random.seed(42)
 
 # === Simulation Configuration ===
 
-# Duration of the simulation in months and minutes
-SIMULATION_DURATION_IN_MONTHS = 12 * 4
-SIMULATION_DURATION_IN_MINUTES = 60 * 24 * 7 * 4 * SIMULATION_DURATION_IN_MONTHS
+# Duration of the simulation in years, months, and minutes
+SIMULATION_DURATION_IN_YEARS = 4
+SIMULATION_DURATION_IN_MONTHS = 12 * SIMULATION_DURATION_IN_YEARS
+SIMULATION_DURATION_IN_MINUTES = (60 * 24) * (7 * 4) * SIMULATION_DURATION_IN_MONTHS
 
 # Number of practitioners and patients in the simulation
 NUMBER_OF_PRACTITIONERS = 10
-NUMBER_OF_PATIENTS = 500 * NUMBER_OF_PRACTITIONERS
+NUMBER_OF_PATIENTS = 2000 * NUMBER_OF_PRACTITIONERS
 
 # === Event Configuration ===
 
 # Event types and their respective weights
 EVENT_TYPE_WEIGHTS = {
-    "Appointment": 0.75,
-    "Encounter": 0.20,
-    "Observation": 0.05,
+    "Appointment": 1.0 / 3.0,
+    "Encounter": 1.0 / 3.0,
+    "Observation": 1.0 / 3.0,
 }
 
 # === Appointment Configuration ===
 
 # Possible durations for appointments and encounters
-APPOINTMENT_VISIT_DURATIONS = [15, 30, 45, 60]
+APPOINTMENT_VISIT_DURATIONS = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 APPOINTMENT_VISIT_DURATION = lambda: random.choice(APPOINTMENT_VISIT_DURATIONS)
 
 # Probabilities related to appointments
@@ -48,7 +47,10 @@ APPOINTMENT_NOSHOW_PROBABILITY = 0.10
 # === Observation Configuration ===
 
 # Probability of generating observations during an encounter
-OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY = 0.50
+OBSERVATIONS_DURING_ENCOUNTER_PROBABILITY = 1.0 / 3.0
+
+# Probability of generating observations during an appointment (skipping an encounter)
+OBSERVATIONS_DURING_APPOINTMENT_PROBABILITY = 1.0 / 3.0
 
 # Observation codes and their descriptions
 OBSERVATION_CODES = {
@@ -63,9 +65,9 @@ OBSERVATIONS_MAX = 5
 # === Access Event Configuration ===
 
 # Probabilities of normal and Break The Glass (BTG) access events
-BTG_ACCESS_PROBABILITY = 0.025
-STANDALONE_BTG_ACCESS_PROBABILITY = 0.0125
-STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.0125
+BTG_ACCESS_PROBABILITY = 0.05
+STANDALONE_BTG_ACCESS_PROBABILITY = 0.05
+STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.05
 
 # === Patient Scheduling Configuration ===
 
@@ -83,13 +85,9 @@ lambda_4 = 31 * 6
 
 # Function to generate cooldown duration using Poisson distribution
 def sample_cooldown_time():
-    if random.random() < 0.25:
-        # Add 1 to ensure at least 1 day of cooldown
-        # return np.random.poisson(lambda_2) + 1
+    if random.random() < 0.75:
         return random.randint(lambda_1, lambda_2)
     else:
-        # Add 1 to ensure at least 1 day of cooldown
-        # return np.random.poisson(lambda_1) + 1
         return random.randint(lambda_3, lambda_4)
 
 
@@ -115,7 +113,7 @@ PATIENT_DISCHARGE_PROBABILITY = 0.10
 PATIENT_ADMITTANCE_PROBABILITY = 0.10
 
 # Target and minimum patient population
-PATIENT_TARGET_POPULATION = NUMBER_OF_PATIENTS
+PATIENT_TARGET_POPULATION = NUMBER_OF_PATIENTS * 1.25 
 PATIENT_MIN_POPULATION = int(PATIENT_TARGET_POPULATION * 0.75)
 
 
@@ -300,6 +298,137 @@ def is_time_available(
 
 
 # TODO: Make sure that appointments start at somewhat regular points in time!
+# def appointment(
+#     engine,
+#     environment,
+#     fhir_logger: models.FHIRLogger,
+#     practitioner_object: models.Practitioner,
+#     patient_object: models.Patient,
+# ):
+#     appointment_duration = APPOINTMENT_VISIT_DURATION()
+#     key = (patient_object.id, practitioner_object.id)
+
+#     requested_time = environment.now
+#     # Step 1: Search for a future time slot
+#     scheduled_start_time = find_next_available_time(
+#         engine, requested_time, practitioner_object, appointment_duration
+#     )
+
+#     if scheduled_start_time is None:
+#         print(
+#             f"[{environment.now:>4}] No available time found for {patient_object.id} with {practitioner_object.id}"
+#         )
+#         return None
+
+#     # Step 2: Reserve the slot by logging the scheduled appointment
+#     appointment_id = fhir_logger.log_appointment(
+#         patient_id=patient_object.id,
+#         created=environment.now,
+#         status=models.AppointmentStatus.BOOKED,
+#         practitioner_id=practitioner_object.id,
+#         duration=appointment_duration,
+#         scheduled_start_time=scheduled_start_time,
+#     )
+
+#     print(
+#         f"[{environment.now:>4}] {patient_object.id} scheduled with {practitioner_object.id} at {scheduled_start_time} for {appointment_duration} min"
+#     )
+
+#     # Step 3: Simulate potential cancellation before appointment
+#     total_wait_time = int(scheduled_start_time - environment.now)
+#     cancellation_check_time = 0
+#     if total_wait_time > 0:
+
+#         # Step 3.1: Random cancellation in between now and the scheduled appointment time
+#         cancellation_check_time = random.randint(0, total_wait_time)
+#         # Use the 'timeout' function to simulate the passage of time
+#         yield environment.timeout(cancellation_check_time)
+
+#         # Step 3.2: Check to see if we should cancel the appointment at this time
+#         if random.random() < APPOINTMENT_CANCEL_PROBABILITY:
+#             fhir_logger.update_appointment_status(
+#                 appointment_id=appointment_id,
+#                 new_status=models.AppointmentStatus.CANCELLED,
+#                 recorded=environment.now,
+#                 practitioner_id=practitioner_object.id,
+#                 reason="Patient cancelled",
+#             )
+#             print(
+#                 f"[{environment.now:>4}] {patient_object.id} CANCELLED appointment with {practitioner_object.id}"
+#             )
+#             return None
+
+#     # 3.3 The appointment was not cancelled, so wait the remaining time until the scheduled appointment
+#     remaining_wait_time = total_wait_time - cancellation_check_time
+#     yield environment.timeout(remaining_wait_time)
+
+#     # Step 4: Show up or no-show
+#     if random.random() < APPOINTMENT_NOSHOW_PROBABILITY:
+#         # Mark as no-show
+#         fhir_logger.update_appointment_status(
+#             appointment_id=appointment_id,
+#             new_status=models.AppointmentStatus.NOSHOW,
+#             recorded=environment.now,
+#             practitioner_id=practitioner_object.id,
+#         )
+#         print(
+#             f"[{environment.now:>4}] {patient_object.id} NO-SHOW for appointment with {practitioner_object.id}"
+#         )
+#         return None
+
+#     # Step 5: Attend appointment
+#     with practitioner_object.resource.request() as request:
+#         yield request
+#         active_appointments.add(key)
+
+#         print(
+#             f"[{environment.now:>4}] {practitioner_object.id} starts APPOINTMENT with {patient_object.id} ({appointment_duration} min)"
+#         )
+
+#         # With some probability, the appointment progresses in the form of an Encounter
+#         main_process = environment.process(
+#             encounter(
+#                 environment=environment,
+#                 fhir_logger=fhir_logger,
+#                 practitioner_object=practitioner_object,
+#                 patient_object=patient_object,
+#                 appointment_id=appointment_id,
+#                 appointment_start=scheduled_start_time,
+#                 appointment_duration=appointment_duration,
+#             )
+#         )
+
+#         # with some probability, the appointment progresses in the form of a sequence of Observations
+#         # TODO: ...
+
+#         # Add potential BTG event during appointment
+#         if random.random() < BTG_ACCESS_PROBABILITY:
+#             btg_proc = environment.process(
+#                 resource_access_process(
+#                     environment=environment,
+#                     fhir_logger=fhir_logger,
+#                     practitioner_object=practitioner_object,
+#                     patient_object=patient_object,
+#                     event_type=models.AccessEventType.EMERGENCY,
+#                     context_resource_type="Appointment",
+#                     context_resource_id=appointment_id,
+#                 )
+#             )
+#             # Run both processes in parallel
+#             yield main_process | btg_proc
+#         else:
+#             yield main_process
+
+#         active_appointments.discard(key)
+
+#         fhir_logger.update_appointment_status(
+#             appointment_id=appointment_id,
+#             new_status=models.AppointmentStatus.FINISHED,
+#             recorded=environment.now,
+#             practitioner_id=practitioner_object.id,
+#         )
+
+
 def appointment(
     engine,
     environment,
@@ -387,36 +516,51 @@ def appointment(
             f"[{environment.now:>4}] {practitioner_object.id} starts APPOINTMENT with {patient_object.id} ({appointment_duration} min)"
         )
 
-        # The appointment progresses in the form of an Encounter
-        main_process = environment.process(
-            encounter(
-                environment=environment,
-                fhir_logger=fhir_logger,
-                practitioner_object=practitioner_object,
-                patient_object=patient_object,
-                appointment_id=appointment_id,
-                appointment_start=scheduled_start_time,
-                appointment_duration=appointment_duration,
-            )
-        )
-
-        # Add potential BTG event during appointment
-        if random.random() < BTG_ACCESS_PROBABILITY:
-            btg_proc = environment.process(
-                resource_access_process(
+        # With some probability, the appointment progresses in the form of a sequence of Observations
+        if random.random() < OBSERVATIONS_DURING_APPOINTMENT_PROBABILITY:
+            # Generate observations during appointment
+            obs_process = environment.process(
+                observations(
                     environment=environment,
                     fhir_logger=fhir_logger,
                     practitioner_object=practitioner_object,
                     patient_object=patient_object,
-                    event_type=models.AccessEventType.EMERGENCY,
-                    context_resource_type="Appointment",
-                    context_resource_id=appointment_id,
+                    encounter_start=environment.now,
+                    remaining_appointment_duration=appointment_duration,
+                    encounter_id=None,  # No encounter associated
                 )
             )
-            # Run both processes in parallel
-            yield main_process | btg_proc
+            yield obs_process
         else:
-            yield main_process
+            # Otherwise proceed with encounter
+            main_process = environment.process(
+                encounter(
+                    environment=environment,
+                    fhir_logger=fhir_logger,
+                    practitioner_object=practitioner_object,
+                    patient_object=patient_object,
+                    appointment_id=appointment_id,
+                    appointment_start=scheduled_start_time,
+                    appointment_duration=appointment_duration,
+                )
+            )
+            # Add potential BTG event during appointment
+            if random.random() < BTG_ACCESS_PROBABILITY:
+                btg_proc = environment.process(
+                    resource_access_process(
+                        environment=environment,
+                        fhir_logger=fhir_logger,
+                        practitioner_object=practitioner_object,
+                        patient_object=patient_object,
+                        event_type=models.AccessEventType.EMERGENCY,
+                        context_resource_type="Appointment",
+                        context_resource_id=appointment_id,
+                    )
+                )
+                # Run both processes in parallel
+                yield main_process | btg_proc
+            else:
+                yield main_process
 
         active_appointments.discard(key)
 

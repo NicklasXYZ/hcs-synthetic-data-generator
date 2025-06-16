@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Create lookup maps
         const patientMap = new Map(patients.map((p) => [p.id, p]));
         const practitionerMap = new Map(practitioners.map((p) => [p.id, p]));
+        console.log(practitioners)
 
         // Store data with valid references only
         window.vizData = {
