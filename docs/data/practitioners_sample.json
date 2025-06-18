@@ -1,3 +1,92 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:50b0103dd0f05d86ce486f994d832826aa61fe7dfa1530e46420ab3b9533da14
-size 2679
+[
+    {
+        "birthdate": "1915-03-11 00:00:00",
+        "first_name": "Ryan",
+        "gender": "female",
+        "id": "e2c58d82-83e5-4ff2-9fe8-de70c49520e2",
+        "last_name": "Miller",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1957-04-14 00:00:00",
+        "first_name": "Michael",
+        "gender": "female",
+        "id": "66b8af80-5e84-48b6-bb5f-3bedc2ba0151",
+        "last_name": "Johnson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1996-12-02 00:00:00",
+        "first_name": "Kimberly",
+        "gender": "female",
+        "id": "26f2a9be-d44f-4a3d-954e-c5185a8bcbea",
+        "last_name": "Myers",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1955-06-22 00:00:00",
+        "first_name": "Christina",
+        "gender": "female",
+        "id": "1a0860af-54c4-4529-accb-0621b03f53ac",
+        "last_name": "Garcia",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1922-12-29 00:00:00",
+        "first_name": "Michael",
+        "gender": "female",
+        "id": "d8bf55f9-fae9-4b74-af2e-3eaafb9df1e3",
+        "last_name": "Calhoun",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1945-04-02 00:00:00",
+        "first_name": "Margaret",
+        "gender": "male",
+        "id": "d29897e3-8b3a-4cf8-a297-80e9eebd0a90",
+        "last_name": "Gutierrez",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1974-11-02 00:00:00",
+        "first_name": "April",
+        "gender": "male",
+        "id": "985c9408-8316-4f36-9f5b-0fd828fe2528",
+        "last_name": "Allen",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1998-09-20 00:00:00",
+        "first_name": "Alicia",
+        "gender": "male",
+        "id": "36885c0a-ed08-4dfa-a8d1-f2adf228d0ec",
+        "last_name": "Benson",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "2001-01-10 00:00:00",
+        "first_name": "Charles",
+        "gender": "male",
+        "id": "cf9f1a03-c199-426d-a2ba-546fc29a7fc0",
+        "last_name": "Hall",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    },
+    {
+        "birthdate": "1943-12-08 00:00:00",
+        "first_name": "Mary",
+        "gender": "female",
+        "id": "0193f0e8-d672-4e02-ac0b-c373c6beaed8",
+        "last_name": "Smith",
+        "resource_type": "Practitioner",
+        "role": "doctor"
+    }
+]

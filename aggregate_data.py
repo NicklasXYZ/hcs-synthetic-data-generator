@@ -13,7 +13,7 @@ def load_data(data_dir):
     if not os.path.isdir(data_dir):
         raise FileNotFoundError(f"Directory not found: {data_dir}")
 
-    json_path = os.path.join(data_dir, "events.json")
+    json_path = os.path.join(data_dir, "events_full.json")
 
     # Ensure the file exists
     if not os.path.isfile(json_path):
@@ -225,7 +225,7 @@ print("\n=== Detailed Table ID Distribution ===")
 print(result_df["table_id"].value_counts().sort_index())
 
 # Save results
-result_df.to_csv(f"{data_dir}/labeled_events-{aggregation_interval}H.csv", index=False)
+result_df.to_csv(f"{data_dir}/labeled_events_full-{aggregation_interval}H.csv", index=False)
 
 sorted_counts = result_df["table_id"].value_counts().sort_index().to_frame()
 sorted_counts = sorted_counts.reset_index()
