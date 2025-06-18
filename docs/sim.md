@@ -79,31 +79,39 @@ sequenceDiagram
 
     loop Event Sequence Generation
         alt Sequence Type 1
-            MainProcess->>Appointment: Generate Appointment (75% chance)
-            Appointment->>Encounter: Generate Encounter (50% chance)
-            Encounter->>Observation: Generate Observation (50% chance)
-            Observation->>BTGAccessEvent: Generate BTG Event (2.5% chance)
-        end
+            MainProcess->>Appointment: Generate Appointment (33.33% chance)
+            alt Sequence Type 1.1
+                Appointment->>Observation: Generate Observation (33.33% chance)
+            end
 
+            alt Sequence Type 1.2
+                Appointment->>Encounter: Generate Encounter (66.66% chance)
+                Encounter->>Observation: Generate Observation (33.33% chance)
+            end
+        end
+        
         alt Sequence Type 2
-            MainProcess->>Encounter: Generate Encounter (20% chance)
-            Encounter->>Observation: Generate Observation (50% chance)
-            Observation->>BTGAccessEvent: Generate BTG Event (2.5% chance)
+            MainProcess->>Encounter: Generate Encounter (33.33% chance)
+            Encounter->>Observation: Generate Observation (33.33% chance)
         end
 
         alt Sequence Type 3
-            MainProcess->>Observation: Generate Observation (5% chance)
-            Observation->>BTGAccessEvent: Generate BTG Event (2.5% chance)
+            MainProcess->>Observation: Generate Observation (33.33% chance)
         end
+
+        Observation->>BTGAccessEvent: Generate BTG Event (5% chance)
+        
     end
 
     loop Concurrent BTG/Normal Access Event Generation
         alt BTG Access Event
-            MainProcess->>BTGAccessEvent: Generate BTG Access Event (1.25% chance)
+            MainProcess->>BTGAccessEvent: Generate BTG Access Event (5% chance)
         end
 
         alt Normal Access Event
-            MainProcess->>NormalAccessEvent: Generate Normal Access Event (1.25% chance)
+            MainProcess->>NormalAccessEvent: Generate Normal Access Event (5% chance)
         end
     end
 ```
+
+[^1]: McGlade, D., & Scott-Hayward, S. (2019). ML-based cyber incident detection for Electronic Medical Record (EMR) systems. Smart Health, 12, 3–23. [doi:10.1016/j.smhl.2018.05.001](https://doi.org/10.1016/j.smhl.2018.05.001)

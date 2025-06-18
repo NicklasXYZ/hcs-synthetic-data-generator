@@ -16,7 +16,10 @@ python simulation.py
 # Export to json
 python export_data.py
 
-# Visualize the simulated data 
+# Aggregate event sequence data in intervals
+python export_data.py
+
+# Visualize the simulated and aggregated data 
 mkdocs serve
 # --> navigate to localhost:8000/vis
 ```

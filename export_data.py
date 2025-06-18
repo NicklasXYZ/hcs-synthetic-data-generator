@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 import models
 import random
 
-MAX_PRACTITIONERS = 5
-MAX_PATIENTS = 100
+MAX_PRACTITIONERS = 10
+MAX_PATIENTS = 50
 
 random.seed(123)
 

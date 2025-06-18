@@ -17,13 +17,13 @@ random.seed(42)
 # === Simulation Configuration ===
 
 # Duration of the simulation in years, months, and minutes
-SIMULATION_DURATION_IN_YEARS = 4
+SIMULATION_DURATION_IN_YEARS = 5
 SIMULATION_DURATION_IN_MONTHS = 12 * SIMULATION_DURATION_IN_YEARS
 SIMULATION_DURATION_IN_MINUTES = (60 * 24) * (7 * 4) * SIMULATION_DURATION_IN_MONTHS
 
 # Number of practitioners and patients in the simulation
-NUMBER_OF_PRACTITIONERS = 10
-NUMBER_OF_PATIENTS = 2000 * NUMBER_OF_PRACTITIONERS
+NUMBER_OF_PRACTITIONERS = 50
+NUMBER_OF_PATIENTS = 1500 * NUMBER_OF_PRACTITIONERS
 
 # === Event Configuration ===
 
@@ -79,23 +79,33 @@ STANDALONE_NORMAL_ACCESS_PROBABILITY = 0.05
 # Define the average number of days between appointments
 lambda_1 = 1  # Frequent visits (1-7 days between)
 lambda_2 = 7
-lambda_3 = 31 * 3  # Regular visits (3-6 months between)
-lambda_4 = 31 * 6
+lambda_3 = 31 * 1  # Regular visits (1-3 months between)
+lambda_4 = 31 * 3
+# Define multiplier converting duration in days to mins
+lambda_multiplier = 60 * 24
 
 
-# Function to generate cooldown duration using Poisson distribution
+# Function to generate cooldown duration
 def sample_cooldown_time():
     if random.random() < 0.75:
+        # print("... Sampling SHORT cooldown time ...")
         return random.randint(lambda_1, lambda_2)
     else:
+        # print("... Sampling LONG cooldown time ...")
         return random.randint(lambda_3, lambda_4)
 
 
 # Cooldown duration between appointment bookings
 PATIENT_SCHEDULING_COOLDOWN_IN_DAYS = lambda: sample_cooldown_time()
 PATIENT_SCHEDULING_COOLDOWN_IN_MINUTES = (
-    lambda: 60 * 24 * PATIENT_SCHEDULING_COOLDOWN_IN_DAYS()
+    lambda: lambda_multiplier * PATIENT_SCHEDULING_COOLDOWN_IN_DAYS()
 )
+
+if SIMULATION_DURATION_IN_MINUTES < lambda_4:
+    raise ValueError(
+        "The simulation duration < max patient arrival time."
+        + " Patients may arrive after the simulation has concluded."
+    )
 
 # Track last activity time for each patient
 last_patient_activity: dict = {}
@@ -113,7 +123,7 @@ PATIENT_DISCHARGE_PROBABILITY = 0.10
 PATIENT_ADMITTANCE_PROBABILITY = 0.10
 
 # Target and minimum patient population
-PATIENT_TARGET_POPULATION = NUMBER_OF_PATIENTS * 1.25 
+PATIENT_TARGET_POPULATION = int(NUMBER_OF_PATIENTS * 1.00)
 PATIENT_MIN_POPULATION = int(PATIENT_TARGET_POPULATION * 0.75)
 
 
@@ -127,7 +137,8 @@ def find_next_available_time(
 
     def fetch_busy_slots(session: Session) -> list[tuple[int, int]]:
         """Fetch all busy slots sorted by start time"""
-        search_window_end = requested_time + 7 * 24 * 60  # look 7 days ahead
+        # search_window_end = requested_time + 7 * 24 * 60  # look 7 days ahead
+        search_window_end = requested_time + 14 * 24 * 60  # look 14 days ahead
 
         appointments = session.exec(
             select(models.Appointment)
@@ -925,7 +936,9 @@ def patient_process(
 
 
 def fill_patient_queues(
-    environment, patient_queues, patient_objects: list, interval=24 * 60
+    environment,
+    patient_queues,
+    patient_objects: list,
 ):
     number_of_practitioners = len(patient_queues)
     count = 0
@@ -935,12 +948,6 @@ def fill_patient_queues(
         # Round-robin index
         index = count % number_of_practitioners
         key = list(patient_queues.keys())[index]
-        # Spread out the patient arrivals over time
-        # arrival_time = int(random.expovariate(1.0 / interval))
-        # arrival_time = random.randint(lambda_2, lambda_1)
-        # arrival_time = sample_cooldown_time()
-        arrival_time = random.randint(lambda_1, lambda_4)
-        yield environment.timeout(arrival_time)
         queue = patient_queues[key]
         yield queue.put(patient_object)
         print(
@@ -1007,12 +1014,6 @@ def practitioner_process(
         )
         yield main_process
 
-        # Update activity
-        last_patient_activity[patient_object.id] = (
-            environment.now,
-            PATIENT_SCHEDULING_COOLDOWN_IN_MINUTES(),
-        )
-
         # Discharge logic
         if random.random() < PATIENT_DISCHARGE_PROBABILITY:
             yield active_patient_count.get(1)
@@ -1020,13 +1021,20 @@ def practitioner_process(
             if patient_object.id in last_patient_activity:
                 del last_patient_activity[patient_object.id]
             print(
-                f"[{environment.now:>4}] Patient {patient_object.id} discharged (Remaining: {active_patient_count.level - 1})"
+                f"[{environment.now:>4}] Patient {patient_object.id} discharged (Remaining: {active_patient_count.level})"
             )
         else:
+
             # Patient continues - requeue immediately (cooldown enforced on next pull)
             patient_queue.put(patient_object)
             print(
                 f"[{environment.now:>4}] Patient {patient_object.id} re-queued (eligible after cooldown)"
+            )
+
+            # Update activity
+            last_patient_activity[patient_object.id] = (
+                environment.now,
+                PATIENT_SCHEDULING_COOLDOWN_IN_MINUTES(),
             )
 
 
@@ -1174,13 +1182,15 @@ def main():
     # Create tables
     SQLModel.metadata.create_all(engine)
 
+    print(f"STARTING SIMULATION OF DURATION: {int(SIMULATION_DURATION_IN_MINUTES):>4}")
+
     # Simulation start: env.now = 0 → Monday at 00:00 (midnight)
     run_simulation(
         engine=engine,
         pracitioners=NUMBER_OF_PRACTITIONERS,
         patients=NUMBER_OF_PATIENTS,
     )
-    print(f"[{SIMULATION_DURATION_IN_MINUTES:>4}] REACHED END OF SIMULATION.")
+    print(f"[{int(SIMULATION_DURATION_IN_MINUTES):>4}] REACHED END OF SIMULATION.")
 
 
 # Run it
