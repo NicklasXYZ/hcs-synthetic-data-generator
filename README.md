@@ -17,7 +17,7 @@ python simulation.py
 python export_data.py
 
 # Aggregate event sequence data in intervals
-python export_data.py
+python aggregate_data.py
 
 # Visualize the simulated and aggregated data 
 mkdocs serve
